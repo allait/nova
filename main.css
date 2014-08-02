@@ -1,0 +1,23 @@
+body {
+  overflow: hidden;
+}
+
+#notes {
+  max-height: 200px;
+  overflow: scroll;
+}
+#notelist ul {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+#notelist ul li {
+  font: 12px Avenir;
+  padding: 1px 0;
+  border-bottom: 1px solid #CCC;
+}
+
+.selected-note {
+  background: #e1ff50;
+}
