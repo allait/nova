@@ -1,7 +1,10 @@
 var ipc = require('ipc');
 var React = require('react');
-var addNotes = require('./note').add;
-var searchNotes = require('./note').search;
+
+var addNotes = require('./note').addNotes;
+var matchNote = require('./note').matchNote;
+var searchNotes = require('./note').searchNotes;
+
 
 var noteItem = React.createClass({
   render: function() {
@@ -22,9 +25,9 @@ var noteList = React.createClass({
     var filterText = this.props.filter;
     var notes = searchNotes(this.props.notes, filterText).map(function(note, index) {
       return noteItem({
-        selected: (note.filename === this.props.selected),
-        filename: note.filename,
-        key:note.filename,
+        selected: (note === this.props.selected),
+        filename: note.name,
+        key: note.name,
         onSelect: this.props.onSelect.bind(null, note),
       });
     }, this);
@@ -57,14 +60,6 @@ var searchField = React.createClass({
 
 
 var noteListWithSearch = React.createClass({
-  select: function (note) {
-    this.setState({
-      selected: note.filename,
-      search: note.filename,
-    });
-    this.props.open(note.filename);
-  },
-
   getInitialState: function() {
     return {
       selected: null,
@@ -74,26 +69,18 @@ var noteListWithSearch = React.createClass({
     };
   },
 
-  handleUserInput: function(search) {
-    this.setState({
-      search: search,
-      filter: search,
-      selected: search,
-    });
-  },
-
   render: function() {
     return React.DOM.div(
       null,
       searchField({
         search: this.state.search,
-        onUserInput: this.handleUserInput,
-        onSubmit: this.props.open,
+        onUserInput: this.props.onSearch,
+        onSubmit: this.props.onSubmit,
       }),
       noteList({
         notes: this.state.notes,
         filter: this.state.filter,
-        onSelect: this.select,
+        onSelect: this.props.onSelect,
         selected: this.state.selected,
       })
     );
@@ -104,7 +91,12 @@ var noteListWithSearch = React.createClass({
 var Notes = function(parentNode) {
   this.notes = [];
   this.parentNode = parentNode;
-  this.component = React.renderComponent(noteListWithSearch({open: this.open}), this.parentNode);
+  this.component = React.renderComponent(noteListWithSearch({
+    onSubmit: this.open.bind(this),
+    onSearch: this.search.bind(this),
+    onSelect: this.select.bind(this),
+  }), this.parentNode);
+  console.log(this.component);
 };
 
 Notes.prototype.add = function(notes) {
@@ -117,5 +109,26 @@ Notes.prototype.add = function(notes) {
 Notes.prototype.open = function(query) {
   ipc.send('open-note', query);
 };
+
+Notes.prototype.search = function(query) {
+  var selected = matchNote(this.notes, query);
+  if (selected) {
+    this.open(selected.name);
+  }
+  this.component.setState({
+    search: query,
+    filter: query,
+    selected: selected,
+  });
+};
+
+Notes.prototype.select = function(note) {
+  this.component.setState({
+    selected: note,
+    search: note.name,
+  });
+  this.open(note.name);
+};
+
 
 module.exports = Notes;

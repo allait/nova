@@ -8,6 +8,8 @@ var ipc = require('ipc');
 var Tray = require('tray');
 var BrowserWindow = require('browser-window');
 
+var Note = require('./app/note').Note;
+
 // Keep a global reference of the window object to avoid GC
 var mainWindow;
 
@@ -52,7 +54,7 @@ app.on('ready', function() {
 
   notes.watched(function(err, watched) {
     var notes = watched[mainDir].map(function(note) {
-      return {filename: path.basename(note, '.md')};
+      return new Note(path.basename(note, '.md'), note);
     });
     mainWindow.webContents.on('did-finish-load', function() {
       mainWindow.webContents.send('notes-list', notes);

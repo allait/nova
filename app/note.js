@@ -7,9 +7,15 @@ var Note = function(name, path) {
   this.text = null;
 };
 
+var matchNote = function(notes, query) {
+  return _.find(notes, function(note) {
+    return (note.name === query);
+  });
+};
+
 var searchNotes = function(notes, query) {
   return _.filter(notes, function(note) {
-    return (note.filename.search(query) >= 0);
+    return (note.name.search(query) >= 0);
   });
 };
 
@@ -17,4 +23,9 @@ var addNotes = function(oldNotes, newNotes) {
   return _.union(oldNotes, (_.isArray(newNotes)) ? newNotes : [newNotes]);
 };
 
-module.exports = {Note: Note, search: searchNotes, add: addNotes};
+module.exports = {
+  Note: Note,
+  searchNotes: searchNotes,
+  addNotes: addNotes,
+  matchNote: matchNote,
+};
