@@ -1,5 +1,5 @@
 var ipc = require('ipc');
-var React = require('react');
+var React = require('react/addons');
 
 var addNotes = require('./note').addNotes;
 var matchNote = require('./note').matchNote;
@@ -10,11 +10,16 @@ var noteItem = React.createClass({
   render: function() {
     var attrs = {
       onClick: this.props.onSelect,
+      className: React.addons.classSet({
+        "note": true,
+        "selected-note": this.props.selected,
+      }),
     };
-    if (this.props.selected) {
-      attrs.className = "selected-note";
-    }
-    return React.DOM.li(attrs, this.props.filename);
+    return React.DOM.li(
+      attrs,
+      this.props.note.name,
+      React.DOM.span({className: "first-line"}, this.props.note.firstline)
+    );
   }
 
 });
@@ -26,8 +31,8 @@ var noteList = React.createClass({
     var notes = searchNotes(this.props.notes, filterText).map(function(note, index) {
       return noteItem({
         selected: (note === this.props.selected),
-        filename: note.name,
-        key: note.name,
+        note: note,
+        key: note.path,
         onSelect: this.props.onSelect.bind(null, note),
       });
     }, this);
@@ -88,8 +93,9 @@ var noteListWithSearch = React.createClass({
 });
 
 
-var Notes = function(parentNode) {
+var Notes = function(parentNode, editor) {
   this.notes = [];
+  this.editor = editor;
   this.parentNode = parentNode;
   this.component = React.renderComponent(noteListWithSearch({
     onSubmit: this.open.bind(this),
@@ -107,7 +113,18 @@ Notes.prototype.add = function(notes) {
 };
 
 Notes.prototype.open = function(query) {
-  ipc.send('open-note', query);
+  // XXX This could use a note object as an argument and send a full
+  // path to the server, but what happens when we want to create
+  // a new note? Do Note objects have any use for `path` at all
+  // or should it be resolved on server side only?
+  // Maybe replace `path` with `key` that is a safe unique representation
+  // of note name + subfolder used for opening existing notes.
+  var note = matchNote(this.notes, query, true);
+  if (note) {
+    this.editor.edit(note.text);
+  } else {
+    ipc.send('open-note', query);
+  }
 };
 
 Notes.prototype.search = function(query) {

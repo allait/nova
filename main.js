@@ -58,6 +58,17 @@ app.on('ready', function() {
     });
     mainWindow.webContents.on('did-finish-load', function() {
       mainWindow.webContents.send('notes-list', notes);
+
+      notes.forEach(function(note) {
+        fs.readFile(note.path, function(err, data) {
+          if (!err) {
+            note.text = data.toString('utf-8');
+            note.firstline = note.text.substr(0, 100).replace('\n', '');
+            mainWindow.webContents.send('read-note', {status: "ok", note: note});
+          }
+        });
+      });
+
     });
   });
 

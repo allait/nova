@@ -6,7 +6,7 @@ var Notes = require('./notelist');
 
 $(function() {
   var editor = new Editor(document.getElementById('note'));
-  var notes = new Notes(document.getElementById('notelist'));
+  var notes = new Notes(document.getElementById('notelist'), editor);
 
   ipc.on('open-note', function(resp) {
     console.log(resp);
@@ -16,7 +16,13 @@ $(function() {
   });
 
   ipc.on('notes-list', function(resp) {
-    notes.add(resp);
+    // notes.add(resp);
+  });
+
+  ipc.on('read-note', function(resp) {
+    if (resp.status === 'ok') {
+      notes.add(resp.note);
+    }
   });
 
 });
