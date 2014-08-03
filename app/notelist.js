@@ -102,7 +102,6 @@ var Notes = function(parentNode, editor) {
     onSearch: this.search.bind(this),
     onSelect: this.select.bind(this),
   }), this.parentNode);
-  console.log(this.component);
 };
 
 Notes.prototype.add = function(notes) {

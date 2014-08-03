@@ -2,6 +2,7 @@ var fs = require('fs');
 var path = require('path');
 
 var Gaze = require('gaze').Gaze;
+var Q = require('q');
 
 var app = require('app');
 var ipc = require('ipc');
@@ -31,8 +32,19 @@ ipc.on('open-note', function(event, filename) {
   });
 });
 
-var notes = new Gaze('*.md', {cwd: mainDir});
-console.log(notes);
+var dirWatcher = new Gaze('*.md', {cwd: mainDir});
+var notesQ = Q.ninvoke(dirWatcher, "watched").then(function(watched) {
+  return Q.all(watched[mainDir].map(function(file) {
+    return Q.nfcall(fs.readFile, file).then(function (data) {
+      var note = new Note(path.basename(file, '.md'), file);
+      note.text = data.toString('utf-8');
+      note.firstline = note.text.substr(0, 100).replace('\n', '');
+      return note;
+    });
+  }));
+}, function(reason) {
+  console.log(reason);
+});
 
 // This method will be called when atom-shell has done everything
 // initialization and ready for creating browser windows.
@@ -42,6 +54,7 @@ app.on('ready', function() {
 
   // Create the browser window.
   mainWindow = new BrowserWindow({
+    show: false,
     width: 400,
     height: 600,
     frame: true,
@@ -52,27 +65,13 @@ app.on('ready', function() {
   // and load the index.html of the app.
   mainWindow.loadUrl('file://' + __dirname + '/index.html');
 
-  notes.watched(function(err, watched) {
-    var notes = watched[mainDir].map(function(note) {
-      return new Note(path.basename(note, '.md'), note);
-    });
-    mainWindow.webContents.on('did-finish-load', function() {
+  // mainWindow.openDevTools();
+  mainWindow.webContents.on('did-finish-load', function() {
+    mainWindow.show();
+    notesQ.then(function (notes) {
       mainWindow.webContents.send('notes-list', notes);
-
-      notes.forEach(function(note) {
-        fs.readFile(note.path, function(err, data) {
-          if (!err) {
-            note.text = data.toString('utf-8');
-            note.firstline = note.text.substr(0, 100).replace('\n', '');
-            mainWindow.webContents.send('read-note', {status: "ok", note: note});
-          }
-        });
-      });
-
     });
   });
-
-  mainWindow.openDevTools();
 
   // Emitted when the window is closed.
   mainWindow.on('closed', function() {

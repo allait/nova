@@ -13,16 +13,10 @@ $(function() {
     if (resp.status === 'ok') {
       editor.edit(resp.data);
     }
+    // XXX add new note (or add note text to existing one) to the notelist
   });
 
   ipc.on('notes-list', function(resp) {
-    // notes.add(resp);
+    notes.add(resp);
   });
-
-  ipc.on('read-note', function(resp) {
-    if (resp.status === 'ok') {
-      notes.add(resp.note);
-    }
-  });
-
 });
