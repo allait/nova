@@ -9,7 +9,7 @@ var Note = function(name, path) {
 
 var matchNote = function(notes, query) {
   return _.find(notes, function(note) {
-    return (note.name === query);
+    return (note.name.indexOf(query) === 0);
   });
 };
 
